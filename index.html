@@ -2151,7 +2151,7 @@ function login(){
       
       hideLoader();
     } else {
-      msg.innerText=`Wrong username or password. Available techs: ${techs.map(t=>t.username).join(', ')}`;
+      msg.innerText="Wrong username or password";
       hideLoader();
     }
   }
@@ -2877,7 +2877,7 @@ function renderAdmin(){
         <tr>
           <td>${t.name}</td>
           <td>${username}</td>
-          <td>${t.pass}</td>
+          <td>${'●'.repeat(t.pass.length)}</td>
           <td><button onclick="deleteTech(${i})" class="btn-small btn-danger">Delete</button></td>
         </tr>
       `;
@@ -2899,11 +2899,14 @@ function renderAdmin(){
         <tr>
           <td>${a.name||'N/A'}</td>
         <td>${a.username}</td>
-        <td>${a.pass}</td>
+        <td>${'●'.repeat(a.pass.length)}</td>
         <td><button onclick="deleteAdmin(${i})" class="btn-small btn-danger" ${admins.length===1?'disabled':''}>Delete</button></td>
       </tr>
     `;
+      adminFragment.appendChild(adminDiv.firstElementChild);
     });
+    adminTable.innerHTML = '';
+    adminTable.appendChild(adminFragment);
   }
   
   // Admin Ticket Table
@@ -4960,7 +4963,7 @@ window.onload=function(){
     try{
       let user=JSON.parse(remembered);
       if(user.type==='admin'){
-        let admin=admins.find(a=>a.username===user.username && a.pass===user.pass);
+        let admin=admins.find(a=>a.username.toLowerCase()===user.username.toLowerCase() && a.pass===user.pass);
         if(admin){
           document.getElementById('loginType').value='admin';
           document.getElementById('username').value=user.username;
@@ -4969,7 +4972,7 @@ window.onload=function(){
           login();
         }
       } else if(user.type==='tech'){
-        let t=techs.find(x=>x.username===user.username && x.pass===user.pass);
+        let t=techs.find(x=>x.username.toLowerCase()===user.username.toLowerCase() && x.pass===user.pass);
         if(t){
           document.getElementById('loginType').value='tech';
           document.getElementById('username').value=user.username;
