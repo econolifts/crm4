@@ -833,7 +833,8 @@ canvas {
   color: #fbbf24;
 }
 
-.status-pill.progress {
+.status-pill.progress,
+.status-pill.in-progress {
   background: rgba(59, 130, 246, 0.15);
   color: #60a5fa;
 }
@@ -1277,18 +1278,19 @@ canvas {
 <p style="margin:8px 0 0 0;font-size:14px;opacity:0.9">Logged in as: <span id="adminUsername"></span></p>
 </div>
 <div class="tab-container">
-<button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
-<button class="tab" onclick="showTab('kanban')">📋 Kanban Board</button>
-<button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
-<button class="tab" onclick="showTab('tracking')">📍 Tech Tracking</button>
-<button class="tab" onclick="showTab('lifts')">🏢 Lifts</button>
-<button class="tab" onclick="showTab('faults')">⚠️ Faults <span id="faultsCount" class="reminder-badge" style="display:none">0</span></button>
-<button class="tab" onclick="showTab('inspections')">🔍 Inspections</button>
-<button class="tab" onclick="showTab('techs')">👷 Techs</button>
-<button class="tab" onclick="showTab('tickets')">🎫 Tickets</button>
-<button class="tab" onclick="showTab('reports')">📈 Reports</button>
-<button class="tab" onclick="showTab('reminders')">⏰ Reminders <span id="reminderCount" class="reminder-badge" style="display:none">0</span></button>
-<button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
+<button class="tab active" onclick="showTab('dashboard',event)">📊 Dashboard</button>
+<button class="tab" onclick="showTab('kanban',event)">📋 Kanban Board</button>
+<button class="tab" onclick="showTab('calendar',event)">📅 Calendar</button>
+<button class="tab" onclick="showTab('tracking',event)">📍 Tech Tracking</button>
+<button class="tab" onclick="showTab('lifts',event)">🏢 Lifts</button>
+<button class="tab" onclick="showTab('faults',event)">⚠️ Faults <span id="faultsCount" class="reminder-badge" style="display:none">0</span></button>
+<button class="tab" onclick="showTab('inspections',event)">🔍 Inspections</button>
+<button class="tab" onclick="showTab('techs',event)">👷 Techs</button>
+<button class="tab" onclick="showTab('tickets',event)">🎫 Tickets</button>
+<button class="tab" onclick="showTab('reports',event)">📈 Reports</button>
+<button class="tab" onclick="showTab('reminders',event)">⏰ Reminders <span id="reminderCount" class="reminder-badge" style="display:none">0</span></button>
+<button class="tab" onclick="showTab('admins',event)">👤 Admins</button>
+<button class="tab" onclick="showTab('settings',event)">⚙️ Settings</button>
 </div>
 
 <!-- Dashboard Tab -->
@@ -1373,9 +1375,9 @@ canvas {
 <div class="card">
 <h3>⚡ Quick Actions</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
-<button onclick="showTab('lifts')" class="btn-success">➕ Add New Lift</button>
-<button onclick="showTab('tickets')" class="btn-success">🎫 Create Ticket</button>
-<button onclick="showTab('techs')" class="btn-secondary">👷 Manage Technicians</button>
+<button onclick="showTab('lifts',event)" class="btn-success">➕ Add New Lift</button>
+<button onclick="showTab('tickets',event)" class="btn-success">🎫 Create Ticket</button>
+<button onclick="showTab('techs',event)" class="btn-secondary">👷 Manage Technicians</button>
 <button onclick="exportData()" style="background:var(--accent-purple)">💾 Backup Data</button>
 </div>
 </div>
@@ -1841,8 +1843,8 @@ canvas {
 <h3 style="margin:8px 0 0 0;font-weight:normal;opacity:0.9" id="techTitle"></h3>
 </div>
 <div class="tab-container">
-<button class="tab active" onclick="showTechTab('jobs')">My Jobs</button>
-<button class="tab" onclick="showTechTab('completed')">Completed</button>
+<button class="tab active" onclick="showTechTab('jobs',event)">My Jobs</button>
+<button class="tab" onclick="showTechTab('completed',event)">Completed</button>
 </div>
 
 <div id="jobs-tab" class="tab-content active">
@@ -2151,7 +2153,7 @@ function login(){
       
       hideLoader();
     } else {
-      msg.innerText=`Wrong username or password. Available techs: ${techs.map(t=>t.username).join(', ')}`;
+      msg.innerText="Wrong username or password";
       hideLoader();
     }
   }
@@ -2247,7 +2249,7 @@ function renderTechTracking(){
     
     // Find current job for this tech
     let currentJob=tickets.find(t=>
-      techs[t.tech]?.name===techName && 
+      t.tech===techName &&
       t.status==='Open' && 
       t.scheduledDate===new Date().toISOString().split('T')[0]
     );
@@ -2340,10 +2342,11 @@ function logout(){
   }
 }
 
-function showTab(tab){
+function showTab(tab,ev){
   document.querySelectorAll('#adminApp .tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('#adminApp .tab-content').forEach(c=>c.classList.remove('active'));
-  event.target.classList.add('active');
+  let btn=ev?ev.target:document.querySelector('#adminApp .tab[onclick*=\"'+tab+'\"]');
+  if(btn) btn.classList.add('active');
   document.getElementById(tab+'-tab').classList.add('active');
   
   // Render content for specific tabs
@@ -2355,10 +2358,11 @@ function showTab(tab){
   if(tab==='tracking') renderTechTracking();
 }
 
-function showTechTab(tab){
+function showTechTab(tab,ev){
   document.querySelectorAll('#techApp .tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('#techApp .tab-content').forEach(c=>c.classList.remove('active'));
-  event.target.classList.add('active');
+  let btn=ev?ev.target:document.querySelector('#techApp .tab[onclick*=\"'+tab+'\"]');
+  if(btn) btn.classList.add('active');
   document.getElementById(tab+'-tab').classList.add('active');
 }
 
@@ -2369,8 +2373,12 @@ function addLift(){
   let lift=document.getElementById('lift').value;
   let frequency=parseInt(document.getElementById('frequency').value);
   
-  if(!client||!address||!phone||!lift){
-    alert('Please fill all fields');
+  if(!client||!address||!lift){
+    alert('Please fill in client, address, and lift ID');
+    return;
+  }
+  if(isNaN(frequency) || frequency<=0){
+    alert('Please enter a valid service frequency (in months)');
     return;
   }
   
@@ -2523,11 +2531,16 @@ function closeEditLiftModal(){
 
 function updateLift(){
   if(editingLiftIndex===-1) return;
+  let newFreq=parseInt(document.getElementById('editLiftFrequency').value);
+  if(isNaN(newFreq) || newFreq<=0){
+    alert('Please enter a valid service frequency (in months)');
+    return;
+  }
   lifts[editingLiftIndex].client=document.getElementById('editLiftClient').value;
   lifts[editingLiftIndex].address=document.getElementById('editLiftAddress').value;
   lifts[editingLiftIndex].phone=document.getElementById('editLiftPhone').value;
   lifts[editingLiftIndex].lift=document.getElementById('editLiftId').value;
-  lifts[editingLiftIndex].frequency=parseInt(document.getElementById('editLiftFrequency').value);
+  lifts[editingLiftIndex].frequency=newFreq;
   save();
   renderAdmin();
   closeEditLiftModal();
@@ -2622,7 +2635,7 @@ function createTicket(){
     return;
   }
   
-  let ticketNumber='T'+(tickets.length+1).toString().padStart(4,'0');
+  let ticketNumber=getNextTicketNumber();
   
   // Convert photos to base64
   let photos=[];
@@ -2641,7 +2654,7 @@ function createTicket(){
     tickets.push({
       ticketNumber,
       lift:lifts[liftIdx],
-      tech:techIdx,
+      tech:techs[techIdx]?.name||'',
       jobType,
       scheduledDate,
       note,
@@ -2681,7 +2694,7 @@ function openEditTicketModal(i){
   
   let liftIdx=lifts.findIndex(l=>l.lift===t.lift.lift);
   document.getElementById('editTicketLift').value=liftIdx;
-  document.getElementById('editTicketTech').value=t.tech;
+  document.getElementById('editTicketTech').value=techs.findIndex(x=>x.name===t.tech);
   document.getElementById('editTicketType').value=t.jobType||'Service';
   document.getElementById('editTicketDate').value=t.scheduledDate;
   document.getElementById('editTicketNote').value=t.note||'';
@@ -2698,7 +2711,8 @@ function updateTicket(){
   if(editingTicketIndex===-1) return;
   let liftIdx=parseInt(document.getElementById('editTicketLift').value);
   tickets[editingTicketIndex].lift=lifts[liftIdx];
-  tickets[editingTicketIndex].tech=parseInt(document.getElementById('editTicketTech').value);
+  let editTechIdx=parseInt(document.getElementById('editTicketTech').value);
+  tickets[editingTicketIndex].tech=techs[editTechIdx]?.name||'';
   tickets[editingTicketIndex].jobType=document.getElementById('editTicketType').value;
   tickets[editingTicketIndex].scheduledDate=document.getElementById('editTicketDate').value;
   tickets[editingTicketIndex].note=document.getElementById('editTicketNote').value;
@@ -2769,7 +2783,7 @@ function submitFaultReport(){
   
   let lift=lifts[reportingFaultLiftIndex];
   let today=new Date().toISOString().split('T')[0];
-  let ticketNumber='T'+(tickets.length+1).toString().padStart(4,'0');
+  let ticketNumber=getNextTicketNumber();
   
   // Mark lift as faulty
   lifts[reportingFaultLiftIndex].isFaulty=true;
@@ -2778,7 +2792,7 @@ function submitFaultReport(){
   tickets.push({
     ticketNumber,
     lift:lift,
-    tech:techIdx,
+    tech:techs[techIdx]?.name||'',
     jobType:'Faulty',
     scheduledDate:today,
     note:`⚠️ PRIORITY: ${priority}\n\n${description}`,
@@ -2801,6 +2815,15 @@ function submitFaultReport(){
   closeFaultReportModal();
   
   alert(`Fault ticket ${ticketNumber} created!\n\nPriority: ${priority}\nAssigned to: ${techs[techIdx].name}`);
+}
+
+function getNextTicketNumber(){
+  let maxNum=0;
+  tickets.forEach(t=>{
+    let num=parseInt(t.ticketNumber.replace('T',''));
+    if(!isNaN(num) && num>maxNum) maxNum=num;
+  });
+  return 'T'+(maxNum+1).toString().padStart(4,'0');
 }
 
 function populateTicketDropdowns(liftSelectId,techSelectId){
@@ -2893,7 +2916,7 @@ function renderAdmin(){
   if(adminTable){
     let adminFragment = document.createDocumentFragment();
     let adminDiv = document.createElement('div');
-    
+
     admins.forEach((a,i)=>{
       adminDiv.innerHTML=`
         <tr>
@@ -2903,11 +2926,15 @@ function renderAdmin(){
         <td><button onclick="deleteAdmin(${i})" class="btn-small btn-danger" ${admins.length===1?'disabled':''}>Delete</button></td>
       </tr>
     `;
+      adminFragment.appendChild(adminDiv.firstElementChild);
     });
+    adminTable.innerHTML='';
+    adminTable.appendChild(adminFragment);
   }
   
   // Admin Ticket Table
   let adminTicketTable=document.getElementById('adminTicketTable');
+  if(!adminTicketTable) return;
   adminTicketTable.innerHTML='';
   tickets.forEach((t,i)=>{
     let statusClass=t.status==='Done'?'status-done':(t.scheduledDate<new Date().toISOString().split('T')[0]?'status-overdue':'status-open');
@@ -2922,7 +2949,7 @@ function renderAdmin(){
         <td>${t.lift.lift} ${faultyBadge} ${incompleteBadge}</td>
         <td>${t.lift.address}</td>
         <td>${jobType}</td>
-        <td>${techs[t.tech]?.name||'N/A'}</td>
+        <td>${t.tech||'N/A'}</td>
         <td>${t.scheduledDate}</td>
         <td>${t.status}</td>
         <td><button onclick="openMap('${t.lift.address}')" class="btn-small">📍 Map</button></td>
@@ -3028,7 +3055,7 @@ function checkIncomplete(){
         <strong>${t.lift.client} - ${t.lift.lift}</strong><br>
         <span style="font-size:13px">${t.lift.address}</span><br>
         <span style="font-size:13px">Scheduled: ${t.scheduledDate}</span><br>
-        <span style="font-size:13px">Tech: ${techs[t.tech]?.name||'N/A'}</span>
+        <span style="font-size:13px">Tech: ${t.tech||'N/A'}</span>
       </div>
     `;
   });
@@ -3049,17 +3076,17 @@ function checkIncomplete(){
 }
 
 function renderTech(){
-  let techIdx=techs.findIndex(t=>t.name===currentTech);
-  if(techIdx===-1) return;
-  
-  let myTickets=tickets.filter(t=>t.tech===techIdx && t.status==='Open');
+  if(!currentTech) return;
+
+  let myTickets=tickets.filter(t=>t.tech===currentTech && t.status==='Open');
   let today=new Date().toISOString().split('T')[0];
   let todayJobs=myTickets.filter(t=>t.scheduledDate===today);
   let allJobs=myTickets.filter(t=>t.scheduledDate!==today);
-  let completedJobs=tickets.filter(t=>t.tech===techIdx && t.status==='Done');
+  let completedJobs=tickets.filter(t=>t.tech===currentTech && t.status==='Done');
   
   // Today's Jobs
   let techJobsToday=document.getElementById('techJobsToday');
+  if(!techJobsToday) return;
   techJobsToday.innerHTML='';
   if(todayJobs.length===0){
     techJobsToday.innerHTML='<p style="color:#999;text-align:center">No jobs scheduled for today</p>';
@@ -3948,7 +3975,7 @@ function viewLiftHistory(liftId){
             </div>
           </div>
           <div style="background:#f5f5f5;padding:8px;border-radius:4px;margin:8px 0">
-            <strong>Ticket:</strong> ${ticket.ticketNumber} | <strong>Tech:</strong> ${techs[ticket.tech]?.name||'N/A'}
+            <strong>Ticket:</strong> ${ticket.ticketNumber} | <strong>Tech:</strong> ${ticket.tech||'N/A'}
           </div>
       `;
       
@@ -4132,12 +4159,13 @@ function downloadDocument(docIndex){
 
 function deleteDocument(docIndex){
   if(!confirm('Delete this document?')) return;
-  
+
   let docs=liftDocuments.filter(d=>d.liftId===currentDocumentLiftId);
   let doc=docs[docIndex];
-  
+
   if(doc){
-    let globalIndex=liftDocuments.findIndex(d=>d===doc);
+    let globalIndex=liftDocuments.findIndex(d=>d.liftId===doc.liftId && d.fileName===doc.fileName && d.uploadDate===doc.uploadDate);
+    if(globalIndex===-1) return;
     liftDocuments.splice(globalIndex,1);
     save();
     openDocumentsModal(currentDocumentLiftId); // Refresh
@@ -4285,7 +4313,7 @@ function renderActivityFeed(){
       icon:'✅',
       text:`Service completed for ${t.lift.client} - ${t.lift.lift}`,
       time:new Date(t.completed),
-      tech:techs[t.tech]?.name||'Unknown'
+      tech:t.tech||'Unknown'
     });
   });
   
@@ -4344,7 +4372,7 @@ function renderUpcomingTasks(){
         <div class="activity-item" style="border-left-color:${daysUntil===0?'var(--accent-danger)':daysUntil===1?'var(--accent-warning)':'var(--accent-secondary)'}">
           <strong>${t.lift.client}</strong><br>
           <small>${t.lift.lift} | ${t.jobType||'Service'}</small><br>
-          <small>Tech: ${techs[t.tech]?.name||'Unassigned'}</small>
+          <small>Tech: ${t.tech||'Unassigned'}</small>
           <div class="activity-time">${urgency}</div>
         </div>
       `;
@@ -4358,18 +4386,19 @@ function renderCharts(){
     console.log('Charts will load when Chart.js library is ready');
     return;
   }
-  
+
   // Services by Type Chart
   let servicesCtx=document.getElementById('servicesChart');
-  if(servicesCtx && !servicesCtx.dataset.chartRendered){
-    servicesCtx.dataset.chartRendered = 'true';
-    
+  if(servicesCtx){
+    let existing=Chart.getChart(servicesCtx);
+    if(existing) existing.destroy();
+
     let types={};
     tickets.forEach(t=>{
       let type=t.jobType||'Service';
       types[type]=(types[type]||0)+1;
     });
-    
+
     new Chart(servicesCtx,{
       type:'doughnut',
       data:{
@@ -4390,12 +4419,13 @@ function renderCharts(){
       }
     });
   }
-  
+
   // Monthly Performance Chart
   let perfCtx=document.getElementById('performanceChart');
-  if(perfCtx && !perfCtx.dataset.chartRendered){
-    perfCtx.dataset.chartRendered = 'true';
-    
+  if(perfCtx){
+    let existing=Chart.getChart(perfCtx);
+    if(existing) existing.destroy();
+
     let months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     let data=new Array(12).fill(0);
     
@@ -4515,7 +4545,7 @@ function renderKanbanColumn(columnId,items){
           ${t.isFaulty?'<span class="kanban-tag" style="background:var(--accent-danger);color:#fff">⚠️ Faulty</span>':''}
         </div>
         <div class="kanban-card-footer">
-          <small>👷 ${techs[t.tech]?.name||'Unassigned'}</small>
+          <small>👷 ${t.tech||'Unassigned'}</small>
           <button onclick="viewTicketDetails(${ticketIdx})" class="btn-small" style="width:auto;padding:4px 8px;font-size:11px">View</button>
         </div>
       </div>
@@ -4534,12 +4564,17 @@ function allowDrop(ev){
 function drag(ev,ticketIdx){
   ev.dataTransfer.setData("ticketIdx",ticketIdx);
   ev.target.classList.add('dragging');
+  ev.target.addEventListener('dragend',function(){
+    this.classList.remove('dragging');
+  },{once:true});
 }
 
 function drop(ev,newStatus){
   ev.preventDefault();
-  let ticketIdx=ev.dataTransfer.getData("ticketIdx");
-  if(ticketIdx){
+  let ticketIdxStr=ev.dataTransfer.getData("ticketIdx");
+  if(ticketIdxStr!==''){
+    let ticketIdx=parseInt(ticketIdxStr);
+    if(isNaN(ticketIdx) || ticketIdx<0 || ticketIdx>=tickets.length) return;
     tickets[ticketIdx].status=newStatus;
     if(newStatus==='Done' && !tickets[ticketIdx].completed){
       tickets[ticketIdx].completed=new Date().toISOString();
@@ -4598,7 +4633,7 @@ function renderCalendar(){
     }
     
     grid.innerHTML+=`
-      <div class="calendar-day ${isToday?'today':''}" onclick="selectCalendarDay('${date.toISOString()}')">
+      <div class="calendar-day ${isToday?'today':''}" onclick="selectCalendarDay('${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}')">
         <div class="calendar-day-number">${day}</div>
         ${eventsHtml}
       </div>
@@ -4614,12 +4649,16 @@ function renderCalendar(){
 }
 
 function getTicketsForDate(date){
-  let dateStr=date.toISOString().split('T')[0];
+  let y=date.getFullYear();
+  let m=String(date.getMonth()+1).padStart(2,'0');
+  let d=String(date.getDate()).padStart(2,'0');
+  let dateStr=`${y}-${m}-${d}`;
   return tickets.filter(t=>t.scheduledDate===dateStr);
 }
 
-function selectCalendarDay(dateIso){
-  let date=new Date(dateIso);
+function selectCalendarDay(dateStr){
+  let parts=dateStr.split('-');
+  let date=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
   let dayTickets=getTicketsForDate(date);
   
   let eventsDiv=document.getElementById('calendar-events');
@@ -4633,7 +4672,7 @@ function selectCalendarDay(dateIso){
         <div class="activity-item">
           <strong>${t.ticketNumber}: ${t.lift.client}</strong><br>
           <small>🏢 ${t.lift.lift} | ${t.jobType||'Service'}</small><br>
-          <small>👷 ${techs[t.tech]?.name||'Unassigned'}</small><br>
+          <small>👷 ${t.tech||'Unassigned'}</small><br>
           <small>Status: <span class="status-pill ${t.status.toLowerCase().replace(' ','-')}">${t.status}</span></small>
           <div style="margin-top:8px">
             <button onclick="openEditTicketModal(${tickets.findIndex(ticket=>ticket.ticketNumber===t.ticketNumber)})" class="btn-small btn-secondary" style="width:auto">Edit Ticket</button>
@@ -4751,7 +4790,7 @@ function renderActiveFaults(){
     let priority=t.priority||'Normal';
     let priorityClass=priority.toLowerCase();
     let daysOpen=Math.floor((Date.now()-new Date(t.scheduledDate))/(1000*60*60*24));
-    let tech=techs[t.tech]?.name||'Unassigned';
+    let tech=t.tech||'Unassigned';
     
     list.innerHTML+=`
       <div class="fault-card ${priorityClass}">
@@ -4832,7 +4871,7 @@ function renderResolvedFaults(){
     list.innerHTML+=`
       <div class="activity-item" style="border-left-color:var(--accent-secondary)">
         <strong>✅ ${t.lift.client} - ${t.lift.lift}</strong><br>
-        <small>🎫 ${t.ticketNumber} | 👷 ${techs[t.tech]?.name||'N/A'}</small><br>
+        <small>🎫 ${t.ticketNumber} | 👷 ${t.tech||'N/A'}</small><br>
         <small>⏱️ Resolved in ${resolutionTime} day${resolutionTime!==1?'s':''}</small>
         <div class="activity-time">Completed: ${completedDate}</div>
       </div>
@@ -4843,6 +4882,8 @@ function renderResolvedFaults(){
 function renderFaultTimeline(){
   let ctx=document.getElementById('faultTimelineChart');
   if(!ctx || typeof Chart==='undefined') return;
+  let existing=Chart.getChart(ctx);
+  if(existing) existing.destroy();
   
   // Get last 6 months of fault data
   let months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -4960,7 +5001,7 @@ window.onload=function(){
     try{
       let user=JSON.parse(remembered);
       if(user.type==='admin'){
-        let admin=admins.find(a=>a.username===user.username && a.pass===user.pass);
+        let admin=admins.find(a=>a.username.toLowerCase()===user.username.toLowerCase() && a.pass===user.pass);
         if(admin){
           document.getElementById('loginType').value='admin';
           document.getElementById('username').value=user.username;
@@ -4969,7 +5010,7 @@ window.onload=function(){
           login();
         }
       } else if(user.type==='tech'){
-        let t=techs.find(x=>x.username===user.username && x.pass===user.pass);
+        let t=techs.find(x=>x.username.toLowerCase()===user.username.toLowerCase() && x.pass===user.pass);
         if(t){
           document.getElementById('loginType').value='tech';
           document.getElementById('username').value=user.username;
