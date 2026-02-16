@@ -148,19 +148,26 @@ button:disabled {
 /* Tables */
 table {
   width: 100%;
+  min-width: 900px;
   border-collapse: collapse;
   margin-top: 15px;
   background: var(--bg-secondary);
   border-radius: 12px;
-  overflow: hidden;
   box-shadow: var(--shadow);
 }
 
 th, td {
   border: 1px solid var(--border-color);
-  padding: 14px 12px;
+  padding: 10px 8px;
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+td {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 th {
@@ -349,6 +356,8 @@ textarea {
 .scroll-table {
   overflow-x: auto;
   border-radius: 12px;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 }
 
 /* Map Link */
@@ -1473,6 +1482,7 @@ canvas {
 </div>
 <div class="card">
 <h3>📋 All Lifts</h3>
+<input id="liftSearchInput" placeholder="Search lifts by client, address, or lift ID..." oninput="filterLiftsTable()" style="margin-bottom:10px;width:100%;max-width:400px">
 <div class="scroll-table">
 <table>
 <thead><tr><th>Client</th><th>Address</th><th>Phone</th><th>Lift ID</th><th>Frequency</th><th>Status</th><th>History</th><th>Documents</th><th>Action</th><th>Report Fault</th><th>WhatsApp</th><th>Edit/Delete</th></tr></thead>
@@ -2039,6 +2049,12 @@ function save(){
   localStorage.setItem('techLocations',JSON.stringify(techLocations));
 }
 
+// Escape strings for safe use in HTML attributes and onclick handlers
+function escapeAttr(str){
+  if(!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 function initializeDemoData(){
   techs=[
     {name:"John",username:"john",pass:"tech1"},
@@ -2356,6 +2372,7 @@ function showTab(tab,ev){
   if(tab==='kanban') renderKanban();
   if(tab==='calendar') renderCalendar();
   if(tab==='tracking') renderTechTracking();
+  if(tab==='lifts') renderAdmin();
 }
 
 function showTechTab(tab,ev){
@@ -2862,20 +2879,25 @@ function renderAdmin(){
     let status=dueIn<0?'⚠️ OVERDUE':(dueIn<7?'🟡 Due Soon':'✅ OK');
     let statusClass=dueIn<0?'status-overdue':'';
     let faultyBadge=l.isFaulty?'<span style="background:#ff6b6b;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px">FAULTY</span>':'';
-    
+
+    let safeClient=escapeAttr(l.client);
+    let safeAddress=escapeAttr(l.address);
+    let safePhone=escapeAttr(l.phone);
+    let safeLift=escapeAttr(l.lift);
+
     tempDiv.innerHTML=`
       <tr class="${statusClass}">
-        <td>${l.client}</td>
-        <td>${l.address}</td>
-        <td>${l.phone}</td>
-        <td>${l.lift} ${faultyBadge}</td>
+        <td>${safeClient}</td>
+        <td>${safeAddress}</td>
+        <td>${safePhone}</td>
+        <td>${safeLift} ${faultyBadge}</td>
         <td>${l.frequency} month(s)</td>
         <td>${status} (${dueIn} days)</td>
-        <td><button onclick="viewLiftHistory('${l.lift}')" class="btn-small" style="background:#17a2b8;color:#fff">📚 History</button></td>
-        <td><button onclick="openDocumentsModal('${l.lift}')" class="btn-small" style="background:#6f42c1;color:#fff">📄 Docs</button></td>
-        <td><button onclick="sendServiceReminder('${l.phone}','${l.client}','${l.lift}','${l.address}')" class="btn-small btn-warning">Send Reminder</button></td>
+        <td><button onclick="viewLiftHistory('${safeLift}')" class="btn-small" style="background:#17a2b8;color:#fff">📚 History</button></td>
+        <td><button onclick="openDocumentsModal('${safeLift}')" class="btn-small" style="background:#6f42c1;color:#fff">📄 Docs</button></td>
+        <td><button onclick="sendServiceReminder('${safePhone}','${safeClient}','${safeLift}','${safeAddress}')" class="btn-small btn-warning">Send Reminder</button></td>
         <td><button onclick="openFaultReportModal(${i})" class="btn-small btn-danger">⚠️ Report Fault</button></td>
-        <td><a href="https://wa.me/${l.phone}" target="_blank" class="btn-small" style="background:#25d366;color:#fff;text-decoration:none;display:inline-block;padding:8px;border-radius:4px;font-size:12px">WhatsApp</a></td>
+        <td><a href="https://wa.me/${l.phone||''}" target="_blank" class="btn-small" style="background:#25d366;color:#fff;text-decoration:none;display:inline-block;padding:8px;border-radius:4px;font-size:12px">WhatsApp</a></td>
         <td>
           <button onclick="openEditLiftModal(${i})" class="btn-small btn-secondary">Edit</button>
           <button onclick="deleteLift(${i})" class="btn-small btn-danger">Delete</button>
@@ -2937,22 +2959,26 @@ function renderAdmin(){
   if(!adminTicketTable) return;
   adminTicketTable.innerHTML='';
   tickets.forEach((t,i)=>{
+    if(!t.lift) return;
     let statusClass=t.status==='Done'?'status-done':(t.scheduledDate<new Date().toISOString().split('T')[0]?'status-overdue':'status-open');
     let faultyBadge=t.isFaulty?'<span style="background:#ff6b6b;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px">FAULTY</span>':'';
     let incompleteBadge=t.isIncomplete?'<span style="background:#ffa726;color:#000;padding:2px 6px;border-radius:4px;font-size:11px">INCOMPLETE</span>':'';
     let jobType=t.jobType||'Service';
-    
+    let safeClient=escapeAttr(t.lift.client||'');
+    let safeLiftId=escapeAttr(t.lift.lift||'');
+    let safeAddress=escapeAttr(t.lift.address||'');
+
     adminTicketTable.innerHTML+=`
       <tr class="${statusClass}">
         <td>${t.ticketNumber}</td>
-        <td>${t.lift.client}</td>
-        <td>${t.lift.lift} ${faultyBadge} ${incompleteBadge}</td>
-        <td>${t.lift.address}</td>
+        <td>${safeClient}</td>
+        <td>${safeLiftId} ${faultyBadge} ${incompleteBadge}</td>
+        <td>${safeAddress}</td>
         <td>${jobType}</td>
         <td>${t.tech||'N/A'}</td>
-        <td>${t.scheduledDate}</td>
+        <td>${t.scheduledDate||'N/A'}</td>
         <td>${t.status}</td>
-        <td><button onclick="openMap('${t.lift.address}')" class="btn-small">📍 Map</button></td>
+        <td><button onclick="openMap('${safeAddress}')" class="btn-small">📍 Map</button></td>
         <td>
           <button onclick="openEditTicketModal(${i})" class="btn-small btn-secondary">Edit</button>
           <button onclick="deleteTicket(${i})" class="btn-small btn-danger">Delete</button>
@@ -2965,6 +2991,15 @@ function renderAdmin(){
   checkReminders();
   checkFaulty();
   checkIncomplete();
+}
+
+function filterLiftsTable(){
+  let query=(document.getElementById('liftSearchInput').value||'').toLowerCase();
+  let rows=document.querySelectorAll('#liftTable tr');
+  rows.forEach(row=>{
+    let text=row.textContent.toLowerCase();
+    row.style.display=text.includes(query)?'':'none';
+  });
 }
 
 function checkReminders(){
@@ -3116,12 +3151,16 @@ function renderTech(){
     techJobsCompleted.innerHTML='<p style="color:#999;text-align:center">No completed jobs yet</p>';
   } else {
     completedJobs.forEach((t,i)=>{
+      if(!t.lift) return;
       let completedDate=t.completed?new Date(t.completed).toLocaleDateString():'N/A';
+      let safeClient=escapeAttr(t.lift.client||'');
+      let safeLiftId=escapeAttr(t.lift.lift||'');
+      let safeAddress=escapeAttr(t.lift.address||'');
       techJobsCompleted.innerHTML+=`
         <div class="card status-done">
           <div style="background:#28a745;color:#fff;padding:6px;border-radius:4px;margin-bottom:8px;font-weight:bold">✅ Completed: ${completedDate}</div>
-          <strong>${t.lift.client} - ${t.lift.lift}</strong><br>
-          <span style="font-size:13px;color:#666">📍 ${t.lift.address}</span><br>
+          <strong>${safeClient} - ${safeLiftId}</strong><br>
+          <span style="font-size:13px;color:#666">📍 ${safeAddress}</span><br>
           <span style="font-size:13px;color:#666">Type: ${t.jobType||'Service'}</span>
         </div>
       `;
@@ -3139,6 +3178,11 @@ function renderTech(){
 }
 
 function renderTicketCard(t,i){
+  // Guard against missing lift data
+  if(!t || !t.lift){
+    return `<div class="card"><p style="color:#999">Ticket data unavailable</p></div>`;
+  }
+
   // Get all historical notes for this lift from all completed tickets
   let liftHistory=[];
   tickets.forEach(ticket=>{
@@ -3255,26 +3299,31 @@ function renderTicketCard(t,i){
     priorityBadge=`<div style="${priorityColor};padding:5px;border-radius:4px;margin:5px 0;font-size:12px;font-weight:bold">Priority: ${t.priority}</div>`;
   }
   
+  let safeClient=escapeAttr(t.lift.client||'');
+  let safeLiftId=escapeAttr(t.lift.lift||'');
+  let safeAddress=escapeAttr(t.lift.address||'');
+  let safeNote=escapeAttr(t.note||'');
+
   return `
     <div class="card">
       <div style="background:#007bff;color:#fff;padding:6px;border-radius:4px;margin-bottom:8px;font-weight:bold">🎫 Ticket: ${ticketNum}</div>
-      <strong>${t.lift.client} - ${t.lift.lift}</strong>
+      <strong>${safeClient} - ${safeLiftId}</strong>
       <div style="${typeColor};padding:8px;border-radius:4px;margin:5px 0;font-weight:bold">${typeIcon} ${jobType}</div>
       ${priorityBadge}
       ${faultyBadge}
       ${overdue}
-      <div class="address-text">📍 ${t.lift.address}</div>
-      <button onclick="openMap('${t.lift.address}')" class="btn-small map-link">📍 Open in Google Maps</button>
+      <div class="address-text">📍 ${safeAddress}</div>
+      <button onclick="openMap('${safeAddress}')" class="btn-small map-link">📍 Open in Google Maps</button>
       <div style="margin:10px 0">
         <strong>Instructions:</strong> ${t.note || 'No specific instructions'}
       </div>
       <div style="margin:10px 0">
-        <strong>Scheduled:</strong> ${t.scheduledDate}
+        <strong>Scheduled:</strong> ${t.scheduledDate||'Not scheduled'}
       </div>
       ${ticketPhotosHtml}
       ${currentNotesHtml}
       ${historyHtml}
-      <button onclick="openDocumentsModal('${t.lift.lift}',true)" class="btn-small" style="background:#6f42c1;color:#fff;margin-bottom:8px">📄 View Diagrams & Manuals</button>
+      <button onclick="openDocumentsModal('${safeLiftId}',true)" class="btn-small" style="background:#6f42c1;color:#fff;margin-bottom:8px">📄 View Diagrams & Manuals</button>
       <button onclick="openNoteModal(${i})" class="btn-success">Add Note & Complete</button>
     </div>
   `;
@@ -4842,8 +4891,8 @@ function renderActiveFaults(){
             🔄 ${t.status==='In Progress'?'Already In Progress':'Mark In Progress'}
           </button>
           <button onclick="resolveFault(${ticketIdx})" class="btn-success">✅ Mark Resolved</button>
-          <button onclick="openMap('${t.lift.address}')" class="btn-small" style="background:var(--accent-primary)">📍 View Location</button>
-          <button onclick="sendFaultNotification('${t.lift.phone}','${t.lift.client}','${t.lift.lift}','${(t.note||'Fault reported').replace(/'/g,"\\'")}','${priority}')" class="btn-small" style="background:#25d366;color:#fff">💬 Notify Client</button>
+          <button onclick="openMap('${escapeAttr(t.lift.address)}')" class="btn-small" style="background:var(--accent-primary)">📍 View Location</button>
+          <button onclick="sendFaultNotification('${escapeAttr(t.lift.phone)}','${escapeAttr(t.lift.client)}','${escapeAttr(t.lift.lift)}','${escapeAttr((t.note||'Fault reported'))}','${priority}')" class="btn-small" style="background:#25d366;color:#fff">💬 Notify Client</button>
         </div>
       </div>
     `;
